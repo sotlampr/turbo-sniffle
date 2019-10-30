@@ -1,0 +1,115 @@
+<html>
+<head>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.2.0/trix.css">
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.2.0/trix.js"></script>
+  <script type="text/javascript" src="subs.js"></script>
+</head>
+
+<body>
+  <div id="app-7">
+    <textarea id='log' rows=15 cols=60 autofocus></textarea>
+    <button v-on:click="sendText">Send to main screen</button>
+    <button v-on:click="startShow">Start show</button>
+    <trix-editor id="editor" placholder="Το κείμενο θα εμφανιστεί εδώ."></trix-editor>
+  </div>
+
+  <script>
+    Vue.component('todo-item', {
+        template: '<li>This is a todo</li>'
+    })
+    var app7 = new Vue({
+      el: '#app-7',
+      data: {
+        seconds: 0
+      },
+      methods: {
+        executeAfterCountdown: function(callback) {
+          let seconds = 0
+          let interval = setInterval(() => {
+            this.writeToLog('Starting in ' + (5 - seconds) + '...');
+            if (seconds === 5) {
+              clearInterval(interval);
+              seconds = 0;
+              callback();
+            }
+            seconds += 1;
+          }, 1000);
+        },
+        writeToLog: function(text) {
+          const date = new Date();
+          let hours = date.getHours();
+          hours = hours <= 9 ? '0' + hours : hours;
+          let seconds = date.getSeconds();
+          seconds = seconds <= 9 ? '0' + seconds : seconds;
+          let minutes = date.getMinutes();
+          minutes = minutes <= 9 ? '0' + minutes : minutes;
+          this.log.value += '[ '+hours+':'+minutes+':'+seconds+' ] ';
+          this.log.value += text +'\n'
+          this.log.scrollTop = this.log.scrollHeight;
+        },
+        sendText: function() {
+          const range = this.editor.getSelectedRange() ;
+          const text = this.editor.getDocument().getStringAtRange(range)
+          if (range[0] === range[1]) {
+            this.writeToLog('No text selected.');
+          } else {
+            this.editor.deleteInDirection('forward');
+            this.writeToLog('Sending to main screen: "'+text+'".');
+          }
+        },
+        startShow: function() {
+          this.executeAfterCountdown(() => {
+            const initialLag = 400;
+            let cursor = 0;
+            let prevRange = undefined;
+            for (let i=0; i<=subs.length; i++) {
+              if (subs[i] && subs[i].at !== undefined){
+                setTimeout(() => {
+                  cursor = this.editor.getDocument().getLength() - 1;
+                  prevRange = this.editor.getSelectedRange();
+                  this.editor.setSelectedRange([cursor, cursor]);
+                  this.editor.insertString(" " + subs[i].text);
+                  this.editor.setSelectedRange(prevRange);
+                }, subs[i].at + initialLag);
+              }
+            }
+          });
+        }
+      },
+      computed: {
+        editor: function() {
+          return document.querySelector('trix-editor').editor;
+        },
+        log: function() {
+          return document.getElementById('log');
+        }
+      },
+      mounted: function() {
+        this.writeToLog(
+          'This is a demo of what the transcriber will see.\nOpen https://www.youtube.com/watch?v=KSWqx8goqSY, load it and have it side-by-side. Press Start countdown and get ready to play the video.'
+        );
+      }
+    })
+  </script>
+</body>
+</html>
+
+<style>
+  textarea {
+    width: 100%;
+  }
+
+  button {
+    margin: 0.5em;
+  }
+
+  trix-toolbar {
+    margin: 1em;
+  }
+
+  trix-editor {
+    margin: 1em;
+  }
+</style>
